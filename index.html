@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SneakStock — Gestion du stock</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ================= EN-TÊTE ================= -->
+  <header class="topbar">
+    <div class="topbar__brand">
+      <span class="logo">👟</span>
+      <div>
+        <h1 class="topbar__title">SneakStock</h1>
+        <p class="topbar__subtitle">Back-office de <span id="shop-name">—</span></p>
+      </div>
+    </div>
+
+    <div class="topbar__infos">
+      <span class="topbar__date" id="current-date">--/--/----</span>
+      <span class="topbar__clock" id="current-time">--:--</span>
+      <button class="btn btn--ghost" id="theme-toggle" type="button">🌙 Mode sombre</button>
+      <button class="btn btn--danger-ghost" id="btn-reset" type="button">Réinitialiser les données</button>
+    </div>
+  </header>
+
+  <div class="layout">
+
+    <!-- ================= MENU LATÉRAL ================= -->
+    <nav class="sidebar">
+      <ul class="sidebar__menu">
+        <li><a href="#dashboard" class="sidebar__link is-active" data-section="dashboard">📊 Tableau de bord</a></li>
+        <li><a href="#inventory" class="sidebar__link" data-section="inventory">📦 Inventaire</a></li>
+        <li><a href="#add-product" class="sidebar__link" data-section="add-product">➕ Ajouter un produit</a></li>
+        <li><a href="#movements" class="sidebar__link" data-section="movements">🔁 Mouvements de stock</a></li>
+        <li>
+          <a href="#alerts" class="sidebar__link" data-section="alerts">
+            ⚠️ Alertes <span class="pill pill--danger" id="alerts-badge">0</span>
+          </a>
+        </li>
+      </ul>
+
+      <div class="sidebar__box">
+        <p class="sidebar__box-title">Utilisateur connecté</p>
+        <p class="sidebar__user" id="user-name">Invité</p>
+        <button class="btn btn--small" id="btn-change-user" type="button">Changer</button>
+      </div>
+    </nav>
+
+    <main class="content">
+
+      <!-- ================= TABLEAU DE BORD ================= -->
+      <section class="section" id="dashboard">
+        <div class="section__header">
+          <h2>Tableau de bord</h2>
+          <p class="section__desc">Vue d'ensemble du stock en temps réel.</p>
+        </div>
+
+        <div class="stats">
+          <article class="stat-card">
+            <p class="stat-card__label">Références</p>
+            <p class="stat-card__value" id="stat-products">0</p>
+            <p class="stat-card__hint">modèles différents</p>
+          </article>
+          <article class="stat-card">
+            <p class="stat-card__label">Paires en stock</p>
+            <p class="stat-card__value" id="stat-units">0</p>
+            <p class="stat-card__hint">toutes références</p>
+          </article>
+          <article class="stat-card">
+            <p class="stat-card__label">Valeur du stock</p>
+            <p class="stat-card__value" id="stat-value">0,00 €</p>
+            <p class="stat-card__hint">prix × quantité</p>
+          </article>
+          <article class="stat-card stat-card--warning">
+            <p class="stat-card__label">Stock faible</p>
+            <p class="stat-card__value" id="stat-low">0</p>
+            <p class="stat-card__hint">sous le seuil d'alerte</p>
+          </article>
+          <article class="stat-card stat-card--danger">
+            <p class="stat-card__label">Ruptures</p>
+            <p class="stat-card__value" id="stat-out">0</p>
+            <p class="stat-card__hint">stock à 0</p>
+          </article>
+          <article class="stat-card">
+            <p class="stat-card__label">Prix moyen</p>
+            <p class="stat-card__value" id="stat-avg-price">0,00 €</p>
+            <p class="stat-card__hint">par paire</p>
+          </article>
+        </div>
+
+        <div class="grid-2">
+          <div class="panel">
+            <h3 class="panel__title">Répartition par catégorie</h3>
+            <!-- Exemple attendu :
+            <div class="bar">
+              <span class="bar__label">Running</span>
+              <div class="bar__track"><div class="bar__fill" style="width: 40%"></div></div>
+              <span class="bar__value">42</span>
+            </div>
+            -->
+            <div class="bars" id="category-chart"></div>
+          </div>
+
+          <div class="panel">
+            <h3 class="panel__title">Top 5 — produits les plus valorisés</h3>
+            <ol class="top-list" id="top-products">
+              <!-- <li><span>Air Max 90</span><strong>2 400,00 €</strong></li> -->
+            </ol>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h3 class="panel__title">Répartition par marque</h3>
+          <div class="chips" id="brand-chips">
+            <!-- <span class="chip">Nike <strong>5</strong></span> -->
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= INVENTAIRE ================= -->
+      <section class="section" id="inventory">
+        <div class="section__header">
+          <h2>Inventaire</h2>
+          <p class="section__desc"><span id="result-count">0</span> produit(s) affiché(s)</p>
+        </div>
+
+        <div class="toolbar">
+          <input type="search" id="search" class="input" placeholder="🔍 Rechercher un nom, une référence…">
+
+          <select id="filter-category" class="input">
+            <option value="all">Toutes les catégories</option>
+            <option value="Running">Running</option>
+            <option value="Lifestyle">Lifestyle</option>
+            <option value="Basketball">Basketball</option>
+            <option value="Ville">Ville</option>
+            <option value="Randonnée">Randonnée</option>
+            <option value="Sandales">Sandales</option>
+          </select>
+
+          <select id="filter-brand" class="input">
+            <option value="all">Toutes les marques</option>
+            <!-- à remplir dynamiquement en JS -->
+          </select>
+
+          <select id="filter-status" class="input">
+            <option value="all">Tous les statuts</option>
+            <option value="ok">En stock</option>
+            <option value="low">Stock faible</option>
+            <option value="out">Rupture</option>
+          </select>
+
+          <select id="sort-select" class="input">
+            <option value="none">Trier par…</option>
+            <option value="name-asc">Nom (A → Z)</option>
+            <option value="name-desc">Nom (Z → A)</option>
+            <option value="price-asc">Prix croissant</option>
+            <option value="price-desc">Prix décroissant</option>
+            <option value="stock-asc">Stock croissant</option>
+            <option value="stock-desc">Stock décroissant</option>
+          </select>
+
+          <div class="toolbar__range">
+            <label for="price-max">Prix max : <strong id="price-max-value">300 €</strong></label>
+            <input type="range" id="price-max" min="0" max="300" step="10" value="300">
+          </div>
+
+          <button class="btn btn--ghost" id="btn-clear-filters" type="button">Effacer les filtres</button>
+          <button class="btn btn--ghost" id="btn-export" type="button">⬇️ Exporter CSV</button>
+        </div>
+
+        <div class="table-wrapper">
+          <table class="table" id="inventory-table">
+            <thead>
+              <tr>
+                <th>Réf.</th>
+                <th>Produit</th>
+                <th>Marque</th>
+                <th>Catégorie</th>
+                <th>Pointures</th>
+                <th class="num">Prix</th>
+                <th class="num">Stock</th>
+                <th>Statut</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="inventory-body">
+              <!--
+              ==== MODÈLE D'UNE LIGNE (à générer en JavaScript) ====
+              <tr data-id="1">
+                <td class="ref">NK-AM90-01</td>
+                <td>
+                  <div class="product">
+                    <span class="product__swatch" style="background: #ffffff"></span>
+                    <div>
+                      <p class="product__name">Air Max 90</p>
+                      <p class="product__meta">Homme · Blanc</p>
+                    </div>
+                  </div>
+                </td>
+                <td>Nike</td>
+                <td>Lifestyle</td>
+                <td><span class="sizes">40 → 45</span></td>
+                <td class="num">149,99 €</td>
+                <td class="num">
+                  <div class="stepper">
+                    <button class="stepper__btn" data-action="decrease">−</button>
+                    <span class="stepper__value">12</span>
+                    <button class="stepper__btn" data-action="increase">+</button>
+                  </div>
+                </td>
+                <td><span class="badge badge--ok">En stock</span></td>
+                <td class="actions">
+                  <button class="icon-btn" data-action="edit" title="Modifier">✏️</button>
+                  <button class="icon-btn icon-btn--danger" data-action="delete" title="Supprimer">🗑️</button>
+                </td>
+              </tr>
+              Badges possibles : badge--ok / badge--low / badge--out
+              -->
+            </tbody>
+          </table>
+
+          <div class="empty-state hidden" id="empty-state">
+            <p class="empty-state__icon">🥿</p>
+            <p>Aucun produit ne correspond à votre recherche.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= AJOUT PRODUIT ================= -->
+      <section class="section" id="add-product">
+        <div class="section__header">
+          <h2>Ajouter un produit</h2>
+          <p class="section__desc">Les champs marqués * sont obligatoires.</p>
+        </div>
+
+        <form class="panel form" id="product-form" novalidate>
+          <div class="form__grid">
+            <div class="field">
+              <label for="product-name">Nom du modèle *</label>
+              <input type="text" id="product-name" name="name" class="input" placeholder="ex : Air Max 90">
+              <span class="field__error" data-error-for="name"></span>
+            </div>
+
+            <div class="field">
+              <label for="product-ref">Référence *</label>
+              <input type="text" id="product-ref" name="ref" class="input" placeholder="ex : NK-AM90-01">
+              <span class="field__error" data-error-for="ref"></span>
+            </div>
+
+            <div class="field">
+              <label for="product-brand">Marque *</label>
+              <input type="text" id="product-brand" name="brand" class="input" list="brand-list" placeholder="ex : Nike">
+              <datalist id="brand-list"></datalist>
+              <span class="field__error" data-error-for="brand"></span>
+            </div>
+
+            <div class="field">
+              <label for="product-category">Catégorie *</label>
+              <select id="product-category" name="category" class="input">
+                <option value="">-- Choisir --</option>
+                <option value="Running">Running</option>
+                <option value="Lifestyle">Lifestyle</option>
+                <option value="Basketball">Basketball</option>
+                <option value="Ville">Ville</option>
+                <option value="Randonnée">Randonnée</option>
+                <option value="Sandales">Sandales</option>
+              </select>
+              <span class="field__error" data-error-for="category"></span>
+            </div>
+
+            <div class="field">
+              <span class="field__label">Public *</span>
+              <div class="radio-group">
+                <label><input type="radio" name="gender" value="Homme"> Homme</label>
+                <label><input type="radio" name="gender" value="Femme"> Femme</label>
+                <label><input type="radio" name="gender" value="Mixte"> Mixte</label>
+                <label><input type="radio" name="gender" value="Enfant"> Enfant</label>
+              </div>
+              <span class="field__error" data-error-for="gender"></span>
+            </div>
+
+            <div class="field">
+              <label for="product-color">Couleur principale</label>
+              <div class="color-row">
+                <input type="color" id="product-color" name="color" value="#222222">
+                <input type="text" id="product-color-name" name="colorName" class="input" placeholder="ex : Noir">
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="product-price">Prix de vente (€) *</label>
+              <input type="number" id="product-price" name="price" class="input" min="0" step="0.01" placeholder="0.00">
+              <span class="field__error" data-error-for="price"></span>
+            </div>
+
+            <div class="field">
+              <label for="product-stock">Quantité initiale *</label>
+              <input type="number" id="product-stock" name="stock" class="input" min="0" step="1" placeholder="0">
+              <span class="field__error" data-error-for="stock"></span>
+            </div>
+
+            <div class="field">
+              <label for="product-threshold">Seuil d'alerte</label>
+              <input type="number" id="product-threshold" name="threshold" class="input" min="0" step="1" value="5">
+            </div>
+
+            <div class="field field--full">
+              <span class="field__label">Pointures disponibles *</span>
+              <div class="size-grid" id="size-grid">
+                <label class="size"><input type="checkbox" name="sizes" value="36"><span>36</span></label>
+                <label class="size"><input type="checkbox" name="sizes" value="37"><span>37</span></label>
+                <label class="size"><input type="checkbox" name="sizes" value="38"><span>38</span></label>
+                <label class="size"><input type="checkbox" name="sizes" value="39"><span>39</span></label>
+                <label class="size"><input type="checkbox" name="sizes" value="40"><span>40</span></label>
+                <label class="size"><input type="checkbox" name="sizes" value="41"><span>41</span></label>
+                <label class="size"><input type="checkbox" name="sizes" value="42"><span>42</span></label>
+                <label class="size"><input type="checkbox" name="sizes" value="43"><span>43</span></label>
+                <label class="size"><input type="checkbox" name="sizes" value="44"><span>44</span></label>
+                <label class="size"><input type="checkbox" name="sizes" value="45"><span>45</span></label>
+                <label class="size"><input type="checkbox" name="sizes" value="46"><span>46</span></label>
+              </div>
+              <div class="size-actions">
+                <button type="button" class="btn btn--small" id="btn-select-all-sizes">Tout cocher</button>
+                <button type="button" class="btn btn--small" id="btn-unselect-sizes">Tout décocher</button>
+              </div>
+              <span class="field__error" data-error-for="sizes"></span>
+            </div>
+
+            <div class="field field--full">
+              <label for="product-description">Description <small>(<span id="desc-counter">0</span>/200)</small></label>
+              <textarea id="product-description" name="description" class="input" rows="3" maxlength="200" placeholder="Quelques mots sur le modèle…"></textarea>
+            </div>
+          </div>
+
+          <div class="preview" id="product-preview">
+            <p class="preview__title">Aperçu</p>
+            <div class="product">
+              <span class="product__swatch" id="preview-swatch"></span>
+              <div>
+                <p class="product__name" id="preview-name">Nom du modèle</p>
+                <p class="product__meta" id="preview-meta">Marque · Catégorie</p>
+              </div>
+              <strong class="preview__price" id="preview-price">0,00 €</strong>
+            </div>
+          </div>
+
+          <div class="form__actions">
+            <button type="reset" class="btn btn--ghost">Vider le formulaire</button>
+            <button type="submit" class="btn btn--primary">Enregistrer le produit</button>
+          </div>
+
+          <p class="feedback hidden" id="form-feedback"></p>
+        </form>
+      </section>
+
+      <!-- ================= MOUVEMENTS ================= -->
+      <section class="section" id="movements">
+        <div class="section__header">
+          <h2>Mouvements de stock</h2>
+          <p class="section__desc">Enregistrer une entrée (livraison) ou une sortie (vente, casse, retour fournisseur).</p>
+        </div>
+
+        <div class="grid-2">
+          <form class="panel form" id="movement-form" novalidate>
+            <h3 class="panel__title">Nouveau mouvement</h3>
+
+            <div class="field">
+              <label for="movement-product">Produit *</label>
+              <select id="movement-product" class="input">
+                <option value="">-- Choisir un produit --</option>
+                <!-- à remplir dynamiquement en JS -->
+              </select>
+              <p class="field__hint" id="movement-current-stock">Stock actuel : —</p>
+            </div>
+
+            <div class="field">
+              <span class="field__label">Type *</span>
+              <div class="segmented">
+                <label><input type="radio" name="movement-type" value="in" checked><span>📥 Entrée</span></label>
+                <label><input type="radio" name="movement-type" value="out"><span>📤 Sortie</span></label>
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="movement-qty">Quantité *</label>
+              <input type="number" id="movement-qty" class="input" min="1" step="1" value="1">
+            </div>
+
+            <div class="field">
+              <label for="movement-reason">Motif</label>
+              <select id="movement-reason" class="input">
+                <option value="Livraison fournisseur">Livraison fournisseur</option>
+                <option value="Vente boutique">Vente boutique</option>
+                <option value="Vente en ligne">Vente en ligne</option>
+                <option value="Retour client">Retour client</option>
+                <option value="Produit défectueux">Produit défectueux</option>
+                <option value="Inventaire">Correction d'inventaire</option>
+              </select>
+            </div>
+
+            <button type="submit" class="btn btn--primary btn--block">Valider le mouvement</button>
+            <p class="feedback hidden" id="movement-feedback"></p>
+          </form>
+
+          <div class="panel">
+            <div class="panel__head">
+              <h3 class="panel__title">Historique</h3>
+              <select id="history-filter" class="input input--small">
+                <option value="all">Tous</option>
+                <option value="in">Entrées</option>
+                <option value="out">Sorties</option>
+              </select>
+            </div>
+
+            <div class="history-summary">
+              <span>Entrées : <strong class="text-success" id="history-total-in">0</strong></span>
+              <span>Sorties : <strong class="text-danger" id="history-total-out">0</strong></span>
+            </div>
+
+            <ul class="history" id="history-list">
+              <!--
+              <li class="history__item history__item--in">
+                <span class="history__icon">📥</span>
+                <div class="history__body">
+                  <p><strong>+5</strong> Air Max 90</p>
+                  <p class="history__meta">Livraison fournisseur · 13/10/2026 14:32 · Imed</p>
+                </div>
+              </li>
+              history__item--in ou history__item--out
+              -->
+            </ul>
+            <p class="empty-state empty-state--small hidden" id="history-empty">Aucun mouvement pour l'instant.</p>
+            <button class="btn btn--small btn--ghost" id="btn-clear-history" type="button">Vider l'historique</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= ALERTES ================= -->
+      <section class="section" id="alerts">
+        <div class="section__header">
+          <h2>Alertes de réapprovisionnement</h2>
+          <p class="section__desc">Produits sous leur seuil d'alerte ou en rupture.</p>
+        </div>
+
+        <div class="alerts" id="alerts-list">
+          <!--
+          <article class="alert alert--low">
+            <div>
+              <p class="alert__title">Gel-Kayano 30 <span class="badge badge--low">Stock faible</span></p>
+              <p class="alert__text">Il reste 3 paires (seuil : 5)</p>
+            </div>
+            <button class="btn btn--small" data-action="restock" data-id="4">Commander 10</button>
+          </article>
+          alert--low ou alert--out
+          -->
+        </div>
+        <p class="empty-state hidden" id="alerts-empty">✅ Aucun produit en alerte. Tout va bien !</p>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ================= MODALE DE MODIFICATION ================= -->
+  <div class="modal" id="edit-modal" aria-hidden="true">
+    <div class="modal__overlay" data-close-modal></div>
+    <div class="modal__box" role="dialog" aria-labelledby="edit-title">
+      <div class="modal__head">
+        <h3 id="edit-title">Modifier le produit</h3>
+        <button class="icon-btn" type="button" data-close-modal>✖</button>
+      </div>
+      <form id="edit-form" class="form">
+        <input type="hidden" id="edit-id">
+        <div class="field">
+          <label for="edit-name">Nom</label>
+          <input type="text" id="edit-name" class="input">
+        </div>
+        <div class="field">
+          <label for="edit-price">Prix (€)</label>
+          <input type="number" id="edit-price" class="input" min="0" step="0.01">
+        </div>
+        <div class="field">
+          <label for="edit-stock">Stock</label>
+          <input type="number" id="edit-stock" class="input" min="0" step="1">
+        </div>
+        <div class="field">
+          <label for="edit-threshold">Seuil d'alerte</label>
+          <input type="number" id="edit-threshold" class="input" min="0" step="1">
+        </div>
+        <div class="form__actions">
+          <button type="button" class="btn btn--ghost" data-close-modal>Annuler</button>
+          <button type="submit" class="btn btn--primary">Enregistrer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= NOTIFICATION ================= -->
+  <div class="toast" id="toast"></div>
+
+  <footer class="footer">
+    <p>SneakStock © <span id="footer-year">2026</span> — Projet pédagogique JavaScript</p>
+  </footer>
+
+  <script src="data.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
