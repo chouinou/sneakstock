@@ -8,7 +8,6 @@ const darkmodeBtn = document.getElementById("theme-toggle")
 darkmodeBtn.addEventListener('click', toggleDarkMode)
 
 // Mission 1 : Living header
-
 // - missing : actualizing clock
 
 // Shop name
@@ -36,32 +35,6 @@ function formatPrice(number) {
 }
 
 // Mission 2 : Inventory
-// ### Mission 2 — Afficher l'inventaire
-// - Écrivez une fonction `getStatus(product)` qui renvoie `"ok"`, `"low"` ou `"out"`.
-
-// - Écrivez une fonction `renderInventory(list)` qui **reçoit une liste** de produits et génère une ligne `<tr>` par produit dans `#inventory-body`, en respectant le modèle donné dans `index.html`.
-
-// - Chaque ligne porte un attribut `data-id` avec l'id du produit.
-
-// - La colonne « Pointures » affiche la plus petite et la plus grande : `40 → 45`.
-
-// - Le badge de statut a la bonne couleur et le bon texte.
-
-// - `#result-count` affiche le nombre de lignes affichées.
-
-// ✅ **Validation :** 20 lignes, 3 badges rouges « Rupture », « 20 produit(s) affiché(s) ».
-
-// Get statuts of a product
-
-// ici product = object
-// object = { 
-//      id: 1,  
-//      ref: "NK-AM90-01",  
-//      name: "Air Max 90",
-//      brand: "Nike",
-//      category: "Lifestyle",  
-//      gender: "Homme",  color: "#f5f5f5", colorName: "Blanc",      price: 149.99, stock: 12, threshold: 5, sizes: [40, 41, 42, 43, 44, 45] }
-
 function getStatus(object) {
     product_stock = object.stock ;
     console.log(product_stock);
@@ -115,3 +88,58 @@ function renderInventory(list) {
     
 }
 renderInventory(products);
+
+// Mission 3 
+// ### Mission 3 — Le tableau de bord
+// 
+// 🎯 *« En un coup d'œil, je veux connaître l'état de mon stock. »*
+// 
+// 📋 **Exigences** — Écrivez une fonction `updateDashboard()` qui remplit :
+// 
+// | Élément | Contenu |
+// | --- | --- |
+// | `#stat-products` | nombre de références |
+// | `#stat-units` | nombre total de paires |
+// | `#stat-value` | valeur totale du stock (prix × stock) |
+// | `#stat-low` | nombre de produits en stock faible |
+// | `#stat-out` | nombre de produits en rupture |
+// | `#stat-avg-price` | prix moyen d'une paire |
+// 
+// Contrainte : utilisez au moins une fois `reduce()` et au moins une fois `filter()`.
+// 
+// ✅ **Validation :** au démarrage → **20** références, **191** paires, **4** stocks faibles, **3** ruptures.
+
+const stat_products = document.getElementById("stat-products") ;
+const stat_units = document.getElementById("stat-units") ; 
+const stat_value = document.getElementById("stat-value") ;
+const stat_low = document.getElementById("stat-low") ;
+const stat_out = document.getElementById("stat-out") ;
+
+function updateDashboard() {
+    let total_pairs = 0 ;
+    let total_money = 0 ;
+    let total_alert = 0 ;
+    let total_out = 0 ;
+    for (let i = 0; i < Object.keys(products).length; i++) {
+        total_pairs += products[i].stock ;
+        total_money += (products[i].stock * products[i].price) ;
+        if (products[i].stock <= products[i].threshold) {
+            total_alert += 1 ;
+        }
+        if (products[i].stock == 0) {
+            total_out += 1 ;
+        }
+        
+    }
+
+    stat_products.textContent = Object.keys(products).length;
+    stat_units.textContent = total_pairs ;
+    stat_value.textContent = formatPrice(total_money) ;
+    stat_low.textContent = total_alert ;
+    stat_out.textContent = total_out ;
+
+
+
+}
+
+updateDashboard();
